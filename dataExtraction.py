@@ -144,19 +144,25 @@ def Run_API_Call(apiCall, apiNickname, url, headers, payload):
 #
 def API_POST_Login(informationData, sections):
     """
+    Runs the POST Login API call, and records the tokens returned.
     
     :param dictionary informationData: The information collected from 'information.json'.
     :param array sections: The list of sections that make up informationData.
+
+    :return: The dictionary informationData with the updated token data added.
     """
 
     fields = {"hosts": ["serverHost"], "authentication": ["authentication_key", "refsixUsername", "refsixPassword"], "tokenData": []}
     fieldData = Get_Information_From_File(informationData, "POST Login", sections, fields)
 
     if fieldData == None: # Failed Test.
-        HTTPS_Status_Error("400 Bad Request", "'POST Login' API call aborted.", "Data cannot be collected for the request.")
+        HTTPS_Status_Error("400 Bad Request", "POST Login")
         return 
 
-    response = api_post_login(fieldData)
+    (tokenUsername, tokenPassword, expires) = Run_Test("When given valid login details, the API returns a token username, password, and expiry.", api_post_login, fieldData)
+
+    informationData["tokenData"] = {"tokenUsername": tokenUsername, "tokenPassword": tokenPassword, "expires": expires}
+    return informationData
 
 def api_post_login(fieldData):
     url = fieldData["serverHost"] + "/auth/login"
@@ -165,25 +171,23 @@ def api_post_login(fieldData):
 
     response = Run_API_Call("POST", "Login", url, headers, payload)
 
-    Run_Test()
-    if response == None:
-        Failed_Test("POST Login returns status code 200 when given valid login details.", f"AssertionError: 'POST Login' API call failed.\n- Username: {fieldData["refsixUsername"]}, Password: {fieldData["refsixPassword"]}")
-        return
-
-    print(response)
-
-def valid_code_received(response):
     if (response == None):
         return ("Fail", f"The API call has not returned any values.")
-
-    tokenUsername = response["token"]
-    tokenPassword = response["password"]
+    try:
+        tokenUsername = response["token"]
+        tokenPassword = response["password"]
+        expires = response["expires"]
+        return ("Pass", (tokenUsername, tokenPassword, expires))
+    except:
+        return ("Fail", f"The API call response does not contain either a 'token', 'password', or 'expiry' field.")
 #
 
 
 # Main Code Area
-
 informationData = Read_Information_File("information.json")
 
 sections = ["hosts", "authentication", "tokenData"]
-API_POST_Login(informationData, sections)
+informationData = API_POST_Login(informationData, sections)
+
+print(informationData["tokenData"])
+print(datetime.now().timestamp())
