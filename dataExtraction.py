@@ -3,11 +3,14 @@ from datetime import datetime
 import requests
 import json
 
+
 # HTTPS Status Codes
-def HTTPS_Status_Success(status, result, information):
-    print(f"{Back.LIGHTGREEN_EX} {status} {Style.RESET_ALL} {result} | {information}\n")
-def HTTPS_Status_Error(status, result, information):
-    print(f"{Back.LIGHTRED_EX} {status} {Style.RESET_ALL} {result} | {information}\n")
+def HTTPS_Status_Success(status, call):
+    print(f"{call}:{Fore.GREEN} {status}{Style.RESET_ALL}\n")
+def HTTPS_Status_Error(status, call):
+    print(f"{call}:{Fore.RED} {status}{Style.RESET_ALL}\n")
+def HTTPS_Status_Unknown(status, call):
+    print(f"{call}:{Fore.YELLOW} {status}{Style.RESET_ALL}\n")
 #
 
 
@@ -35,7 +38,7 @@ def Run_Test(test, function, parameters):
 
     if testStatus == "Fail":
         Failed_Test(test, returnedValues)
-        return None
+        return
     else:
         Passed_Test(test)
         return returnedValues
@@ -51,7 +54,7 @@ def Read_Information_File(file):
 
     :return: A dictionary containing the JSON data from the file.
 
-    :test: Fails if the file cannot be found, or if it cannot be read.
+    :raises: The test fails if the file cannot be found, or if it cannot be read.
     """
 
     return Run_Test(f"Information file '{file}' exists and can be read.", read_information_file, {"file": file})
@@ -82,7 +85,7 @@ def Get_Information_From_File(informationData, apiCall, sections, fields):
     
         :return: A dictionary containing the extracted fields and their corresponding data.
     
-        :test: Fails if a requested field cannot be found.
+        :raises: The test fails if a requested field cannot be found.
         """
     
     return Run_Test(f"Information can be collected from the file for {apiCall}.", get_information_from_file, (informationData, sections, fields))
@@ -109,10 +112,32 @@ def get_information_from_file(parameters):
 
 
 #
-def Run_API_Call(apiCall, url, headers, payload):
+def Run_API_Call(apiCall, apiNickname, url, headers, payload):
+    """
+    Takes the given parameters and API call, and attempts to run it. Then attempts to deal with the resulting response code.
+
+    :param string apiCall: The type of API call being made (GET, POST, PUT, DELETE).
+    :param string apiNickname: The nickname of that specific call.
+    :param string url: The URL for the API call.
+    :param dictionary headers: The information needed to make the call.
+    :param string payload: More information needed for the API call.
+
+    :return: A JSON object containing the response from the API call.
+
+    :raises: HTTPS Status code based on the response from the API.
+    """
+
     response = requests.request(apiCall, url, headers=headers, data=payload)
 
-    print(response.status_code)
+    if response.status_code >= 200 and response.status_code <= 299:
+        HTTPS_Status_Success(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")
+        return response.json()
+    
+    if response.status_code >= 400 and response.status_code <= 499:
+        HTTPS_Status_Error(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")
+        return
+
+    HTTPS_Status_Unknown(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")  
 #
 
 
@@ -127,19 +152,32 @@ def API_POST_Login(informationData, sections):
     fields = {"hosts": ["serverHost"], "authentication": ["authentication_key", "refsixUsername", "refsixPassword"], "tokenData": []}
     fieldData = Get_Information_From_File(informationData, "POST Login", sections, fields)
 
-    if (fieldData == None): # Failed Test.
-        HTTPS_Status_Error("400 Bad Request", "'POST Login' API Call Aborted.", "Data cannot be collected for the request.")
-        return None 
+    if fieldData == None: # Failed Test.
+        HTTPS_Status_Error("400 Bad Request", "'POST Login' API call aborted.", "Data cannot be collected for the request.")
+        return 
 
     response = api_post_login(fieldData)
-
 
 def api_post_login(fieldData):
     url = fieldData["serverHost"] + "/auth/login"
     payload = json.dumps({"username": fieldData["refsixUsername"], "password": fieldData["refsixPassword"]})
     headers = {"Authorisation": f"Basic {fieldData["authentication_key"]}", "Content-Type": "application/json"}
 
-    Run_API_Call("POST", url, headers, payload)
+    response = Run_API_Call("POST", "Login", url, headers, payload)
+
+    Run_Test()
+    if response == None:
+        Failed_Test("POST Login returns status code 200 when given valid login details.", f"AssertionError: 'POST Login' API call failed.\n- Username: {fieldData["refsixUsername"]}, Password: {fieldData["refsixPassword"]}")
+        return
+
+    print(response)
+
+def valid_code_received(response):
+    if (response == None):
+        return ("Fail", f"The API call has not returned any values.")
+
+    tokenUsername = response["token"]
+    tokenPassword = response["password"]
 #
 
 
