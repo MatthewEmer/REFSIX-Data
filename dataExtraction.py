@@ -48,11 +48,10 @@ class REFSIX_API:
             The file path for the relevant file.
         """
 
-        test = Test("The authorisation information file exists and can be read from.", None, 0, 9, self._ReadAuthorisationDataFile, filePath)
-        (success, response) = test.RunTest()
-
-        if success == True:
-            self._apiAuthorisationData = response
+        testCondition = TestCondition(None, 0, 9)
+        test = Test("The authorisation information file exists and can be read from.", testCondition, self._ReadAuthorisationDataFile, filePath)
+        
+        self._apiAuthorisationData = test.RunTest()
 
 
     def _ReadAuthorisationDataFile(self, filePath:str):
@@ -93,16 +92,22 @@ class REFSIX_API:
             The expected HTTPS status code returned with the API call. [Default = 200]
         dataType : string (optional)
             The type of data being fed into the call (normal, boundary, erroneous). [Default = "normal"]
+        """
+
+        testCondition = TestCondition(expectedStatus, 0, 0)
+        test = Test(f"{apiRequest.GetName()} returns a {expectedStatus} status code when given {dataType} inputs.", testCondition, apiRequest.RunCall)
+        test.RunTest()
+
+
+    def _CheckExpiredTokens(self):
+        """
+        A private function which checks whether the authentication tokens are still valid.
 
         Returns
         ---
-            A boolean of whether the test passed or not.
+            A boolean value, true if the tokens have expired, and false if not.
         """
-        
-        test = Test(f"{apiRequest.GetName()} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 0, 0, apiRequest.RunCall)
-        (success, response) = test.RunTest()
-
-        return success
+        return self._expiryTime == None or self._expiryTime <= datetime.now().timestamp()
 #
 
 # POST Login
@@ -110,12 +115,17 @@ class REFSIX_API:
         """
         A public function which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
         """
+
+        if self._apiAuthorisationData == None:
+            return
         
         responseValues = self._CallPOSTLogin()
 
-        test = Test("POST Login provides token data that expires in the future.", datetime.now().timestamp(), 0, 2, GetDataFieldFromJsonForTest, [responseValues, "expires"])
-        (success, self._expiryTime) = test.RunTest()
-        if success:
+        testCondition = TestCondition(datetime.now().timestamp(), 0, 2)
+        test = Test("POST Login provides token data that expires in the future.", testCondition, GetDataFieldFromJsonForTest, [responseValues, "expires"])
+        self._expiryTime = test.RunTest()
+
+        if test.GetResult():
             self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
 
 
@@ -129,7 +139,7 @@ class REFSIX_API:
         """
 
         postRequest = self._FormatPOSTLoginRequest()
-        testResult = self._RunAPICallWithTest(postRequest)
+        self._RunAPICallWithTest(postRequest)
         return GetDataFromJson(postRequest.GetResponseJson(), ["token", "password", "expires"])
 
 
@@ -257,62 +267,98 @@ class Request:
 
 ## Testing Class
 class Test:
-    _success = None
-    _test = None
-    _TestCondition = None
+    """
+    The class responsible for running tests.
 
-    _function = None
+    Attributes
+    ---
+    _success : bool (private)
+        Whether the test succeeded or not.
+    _test : string (private)
+        The text explanation of the test.
+    _testCondition : TestCondition (private)
+        The TestCondition object that determines the test's outcome.
+    _function : function (private)
+        The function being tested.
+    _functionParameters : any (private)
+        The parameters to be passed into the function.
+    """
+
+# Class Setup
+    _success:bool = None
+    _test:str = None
+    _testCondition:TestCondition = None
+
+    _function:function = None
     _functionParameters = None
 
-    def __init__(self, test, expectedResponse, responseType, responseComparison, function, functionParameters = None):
+    def __init__(self, test, testCondition, function, functionParameters = None):
         """
         Initialises an instance of the Test class. 
 
-        :param string test: The test to be carried out.
-        :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length).
-        :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
-        :param Function function: The function to be tested.
-        :param (optional) any functionParameters: The parameter(s) to be passed into the function.
+        Parameters
+        ---
+        test : string
+            The description of the test being carried out.
+        testCondition : TestCondition 
+            The TestCondition object that determines the test's outcome.
+        function : Function 
+            The function being tested.
+        functionParameters : any (optional)
+            The parameters to be passed into the function. [Default = None]
         """
 
         self._test = test
-        self._TestCondition = TestCondition(expectedResponse, responseType, responseComparison)
+        self._testCondition = testCondition
         
         self._function = function
         self._functionParameters = functionParameters
 
 
-    def _OutputOutcome(self, response):
-        """
-        Takes the outcome of the test, and outputs a debug message.
+    def GetResult(self): return self._success
+#
 
-        :param string response: The function return values from the test.
-        """
-
-        if self._success == True:
-            print(f"{Back.GREEN} PASS {Style.RESET_ALL} {self._test}\n")
-        else:
-            print(f"{Back.RED} FAIL {Style.RESET_ALL} {self._test}\n- Response: {response}, Expected Response: {self._TestCondition.GetExpectedResponse()}\n")
-
-
+# Running The Test
     def RunTest(self):
         """
-        Runs the test and outputs the outcome.
+        A public function which runs the test and outputs the outcome.
 
-        :return: Returns true if the test passes, and false if it doesn't, alongside the response from the function.
+        Returns
+        ---
+            The return value from the function being tested (if the test succeeds).
         """
 
-        response = None
         if self._functionParameters == None:
-            response = self._function()
+            returnValue = self._function()
         else:
-            response = self._function(self._functionParameters)
+            returnValue = self._function(self._functionParameters)
 
-        self._success = self._TestCondition.TestResponse(response)        
+        self._success = self._testCondition.TestResponse(returnValue)        
+        self._OutputOutcome(returnValue)
 
-        self._OutputOutcome(response)
-        return (self._success, response)
+        if self._success:
+            return returnValue
+
+
+    def _OutputOutcome(self, returnValue):
+        """
+        A private function which takes the outcome of the test, and outputs a debug message.
+
+        Parameters
+        ---
+        returnValue : string
+            The return value from the tested function.
+        """
+
+        outcomeBanner = { True: f"{Back.GREEN} PASS {Style.RESET_ALL}", False: f"{Back.RED} FAIL {Style.RESET_ALL}" }
+        comparisonText = { -2: "Must be less than the expected value.", -1: "Must be less than or equal to the expected value.", 0: "Must be equal to the expected value.", 1: "Must be greater than or equal to the expected value.", 2: "Must be greater than the expected value.", 9: "Must not be equal to the expected value." }
+
+        if self._success == True:
+            print(f"{outcomeBanner[self._success]} {self._test}\n")
+        else:
+            print(f"{outcomeBanner[self._success]} {self._test}\n- {comparisonText[self._testCondition.GetComparisonType()]}\n- Expected Response: {self._testCondition.GetExpectedResponse()}, Actual Response: {returnValue}\n")
+#
+
 ##
 
 
@@ -338,6 +384,7 @@ class TestCondition:
 
 
     def GetExpectedResponse(self): return self._expectedResponse
+    def GetComparisonType(self): return self._responseComparison
 
 
     def TestResponse(self, response):
