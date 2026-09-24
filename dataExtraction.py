@@ -8,6 +8,7 @@ import math
 ## REFSIX API Class
 class REFSIX_API:
     _apiAuthorisationData = None
+    _loggedIn = False
 
     def __init__(self, filePath):
         """
@@ -21,9 +22,23 @@ class REFSIX_API:
         data = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;refsixUsername"])
 
 
-    def RunAPICall(apiCall):
+    def AttemptLoginWithTest(self):
+        responseValues = self._RunAPICall("POST Login")
+
+        test = Test("POST Login provides token data that expires in the future.", datetime.now().timestamp(), 0, 2, GetDataFieldFromJsonForTest, [responseValues, "expires"])
+        (self._loggedIn, response) = test.RunTest()
+
+        self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
+
+        print(self._apiAuthorisationData)
+        print(self._loggedIn)
+
+
+    def _RunAPICall(self, apiCall):
         """
         Recieves the request to run an API call and attempts to carry it out.
+
+        :param string apiCall: The name of the API call you want to make.
         """
 
         callType = None
@@ -32,7 +47,7 @@ class REFSIX_API:
         payload = None
         
         if apiCall == "POST Login":
-            raise NotImplementedError
+            return self._CallPOSTLogin()
         if apiCall == "GET All Matches":
             raise NotImplementedError
         if apiCall == "GET Match":
@@ -43,6 +58,8 @@ class REFSIX_API:
             raise NotImplementedError
         if apiCall == "DELETE Match":
             raise NotImplementedError
+        else:
+            raise NameError
 
 
     def _RunAPICallWithTest(self, callName, callType, url, headers, payload, expectedStatus = 200, dataType = "normal"):
@@ -56,13 +73,15 @@ class REFSIX_API:
         :param string payload: More information needed for the API call.
         :param integer expectedStatus: The expected HTTPS status code returned with the API call.
         :param string dataType: The type of data being fed into the call (normal, boundary, erroneous).
+
+        :return: A tuple containing the HTTPS status code and the API response data.
         """
         
-        test = Test(f"{callName} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 0, 0, self._run_api_call, [callType, url, headers, payload])
+        test = Test(f"{callName} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 2, 0, self._run_api_call, [callType, url, headers, payload])
         (success, response) = test.RunTest()
 
-        self._OutputCallStatus(callName, response.status_code, response.request)
-        return (response.status_code, response.text)
+        self._OutputCallStatus(callName, response.status_code, response.url)
+        return (response.status_code, response.json())
 
 
     def _OutputCallStatus(self, apiCall, statusCode, request):
@@ -84,7 +103,7 @@ class REFSIX_API:
         else: # Unsupported Status Codes
             outputMessage += Fore.YELLOW
 
-        print(outputMessage + f" {statusCode} {supportedStatusCodes[statusCode]} - {request}\n")
+        print(outputMessage + f" {statusCode} {supportedStatusCodes[statusCode]}{Style.RESET_ALL} - {request}\n")
 
 
     def _GetAuthorisationDataWithTest(self, filePath):
@@ -99,6 +118,24 @@ class REFSIX_API:
 
         if success == True:
             self._apiAuthorisationData = response
+
+
+    def _CallPOSTLogin(self):
+        """
+        Calls a POST Login request from the API.
+
+        :return: A dictionary containing the returned token and password.
+        """
+        
+        inputFields = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
+
+        url = inputFields["hosts;serverHost"] + "/auth/login"
+        payload = json.dumps({"username": inputFields["authentication;refsixUsername"], "password": inputFields["authentication;refsixPassword"]})
+        headers = {"Authorisation": f"Basic {inputFields["authentication;authentication_key"]}", "Content-Type": "application/json"}
+
+        (status, response) = self._RunAPICallWithTest("POST Login", "POST", url, headers, payload)
+
+        return GetDataFromJson(response, ["token", "password", "expires"])
 
 
     def _run_api_call(self, parameters):
@@ -153,7 +190,7 @@ class Test:
 
         :param string test: The test to be carried out.
         :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length).
+        :param any responseType: What response you want the class to test (0: value, 1: length, 2: status).
         :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
         :param Function function: The function to be tested.
         :param (optional) any functionParameters: The parameter(s) to be passed into the function.
@@ -211,7 +248,7 @@ class TestCondition:
         Initialises an instance of the Test Condition class.
 
         :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length).
+        :param any responseType: What response you want the class to test (0: value, 1: length, 2: status).
         :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
         """
 
@@ -239,6 +276,8 @@ class TestCondition:
                 responseValue = math.ceil(math.log10(response))
             else:
                 responseValue = len(response)
+        if self._responseType == 2:
+            responseValue = response.status_code
 
         # Evaluating the response.
         match self._responseComparison:
@@ -275,6 +314,9 @@ def GetDataFromJson(json, returnFields):
         retrievedFields[field] = get_data_from_json(json, field)
 
     return retrievedFields
+
+
+def GetDataFieldFromJsonForTest(parameters): return GetDataFromJson(parameters[0], [parameters[1]])[parameters[1]]
 
 
 def get_data_from_json(json, path):
@@ -401,3 +443,4 @@ def API_GET_All_Matches(informationData, sections):
 
 # Main Code Area
 refsixApi = REFSIX_API("information.json")
+refsixApi.AttemptLoginWithTest()
