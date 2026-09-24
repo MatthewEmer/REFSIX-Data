@@ -21,12 +21,57 @@ class REFSIX_API:
         data = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;refsixUsername"])
 
 
-    def _OutputCallStatus(self, apiCall, statusCode):
+    def RunAPICall(apiCall):
+        """
+        Recieves the request to run an API call and attempts to carry it out.
+        """
+
+        callType = None
+        url = None
+        headers = None
+        payload = None
+        
+        if apiCall == "POST Login":
+            raise NotImplementedError
+        if apiCall == "GET All Matches":
+            raise NotImplementedError
+        if apiCall == "GET Match":
+            raise NotImplementedError
+        if apiCall == "PUT Match (update)":
+            raise NotImplementedError
+        if apiCall == "POST Match (create)":
+            raise NotImplementedError
+        if apiCall == "DELETE Match":
+            raise NotImplementedError
+
+
+    def _RunAPICallWithTest(self, callName, callType, url, headers, payload, expectedStatus = 200, dataType = "normal"):
+        """
+        Runs the API call within a test on the status code vs. the inputted data.
+
+        :param string callName: The name of the API call being made.
+        :param string callType: The type of API call being made (GET, POST, PUT, DELETE).
+        :param string url: The URL for the API call.
+        :param dictionary headers: The information needed to make the call.
+        :param string payload: More information needed for the API call.
+        :param integer expectedStatus: The expected HTTPS status code returned with the API call.
+        :param string dataType: The type of data being fed into the call (normal, boundary, erroneous).
+        """
+        
+        test = Test(f"{callName} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 0, 0, self._run_api_call, [callType, url, headers, payload])
+        (success, response) = test.RunTest()
+
+        self._OutputCallStatus(callName, response.status_code, response.request)
+        return (response.status_code, response.text)
+
+
+    def _OutputCallStatus(self, apiCall, statusCode, request):
         """
         Takes a given HTTPS status code and outputs a debug message linking it to the given API call.
 
         :param string apiCall: The API call that has just been made.
         :param integer statusCode: A HTTPS status code, being given by the API call.
+        :param string request: The actual request that was made.
         """
 
         supportedStatusCodes = {200: "Ok", 400: "Bad Request", 401: "Unauthorised", 404: "Not Found"}
@@ -39,7 +84,7 @@ class REFSIX_API:
         else: # Unsupported Status Codes
             outputMessage += Fore.YELLOW
 
-        print(outputMessage + f"{statusCode} {supportedStatusCodes[statusCode]}\n")
+        print(outputMessage + f" {statusCode} {supportedStatusCodes[statusCode]} - {request}\n")
 
 
     def _GetAuthorisationDataWithTest(self, filePath):
@@ -56,6 +101,21 @@ class REFSIX_API:
             self._apiAuthorisationData = response
 
 
+    def _run_api_call(self, parameters):
+        """
+        Actually runs the API call.
+
+        :param string callType: The type of API call being made (GET, POST, PUT, DELETE) [in parameters, index 0].
+        :param string url: The URL for the API call [in parameters, index 1].
+        :param dictionary headers: The information needed to make the call [in parameters, index 2].
+        :param string payload: More information needed for the API call [in parameters, index 3].
+
+        :return: The response object from the request.
+        """
+
+        return requests.request(parameters[0], parameters[1], headers=parameters[2], data=parameters[3])
+
+    
     def _get_authorisation_data(self, filePath):
         """
         Takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
@@ -226,7 +286,7 @@ def get_data_from_json(json, path):
 
     :return: The value stored at the given location, or None if there is a KeyError.
     """
-    
+
     seperatorIndex = path.find(";")
 
     if seperatorIndex == -1:
