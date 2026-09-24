@@ -1,37 +1,57 @@
-from colorama import Fore, Back, Style
+### Importing Libraries
+from colorama import Fore, Back, Style # Coloured text
 from datetime import datetime
 import requests
 import json
 import math
+### 
+
 
 
 ## REFSIX API Class
 class REFSIX_API:
-    _apiAuthorisationData = None
-    _loggedIn = False
+    """
+    The class responsible for handling all interactions between the codebase and REFSIX's API.
 
-    def __init__(self, filePath):
+    Attributes
+    ---
+    _apiAuthorisationData : dict (private)
+        The private data required to authenticate the connection between the codebase and the API.
+    _expiryTime : int (private)
+        The integer timestamp when the login token data will expire.
+    """
+
+    _apiAuthorisationData : dict = None
+    _expiryTime : int = None
+
+    def __init__(self, filePath: str):
         """
         Initialises an instance of the REFSIX_API class.
 
-        :param string filePath: The file path for the relevant file.
+        Parameters
+        ---
+        filePath : string 
+            The file path for the file containing the private authentication data.
+
+        Returns
+        ---
+            None
         """
 
         self._GetAuthorisationDataWithTest(filePath)
 
-        data = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;refsixUsername"])
-
 
     def AttemptLoginWithTest(self):
+        """
+        Attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
+        """
+        
         responseValues = self._RunAPICall("POST Login")
 
         test = Test("POST Login provides token data that expires in the future.", datetime.now().timestamp(), 0, 2, GetDataFieldFromJsonForTest, [responseValues, "expires"])
-        (self._loggedIn, response) = test.RunTest()
+        (success, self._expiryTime) = test.RunTest()
 
         self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
-
-        print(self._apiAuthorisationData)
-        print(self._loggedIn)
 
 
     def _RunAPICall(self, apiCall):
@@ -346,101 +366,9 @@ def get_data_from_json(json, path):
         return None
    
 ##
-""""
-#
-def Run_API_Call(apiCall, apiNickname, url, headers, payload):
-    
-    Takes the given parameters and API call, and attempts to run it. Then attempts to deal with the resulting response code.
-
-    :param string apiCall: The type of API call being made (GET, POST, PUT, DELETE).
-    :param string apiNickname: The nickname of that specific call.
-    :param string url: The URL for the API call.
-    :param dictionary headers: The information needed to make the call.
-    :param string payload: More information needed for the API call.
-
-    :return: A JSON object containing the response from the API call.
-
-    :raises: HTTPS Status code based on the response from the API.
-    
-
-    response = requests.request(apiCall, url, headers=headers, data=payload)
-
-    if response.status_code >= 200 and response.status_code <= 299:
-        HTTPS_Status_Success(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")
-        return response.json()
-    
-    if response.status_code >= 400 and response.status_code <= 499:
-        HTTPS_Status_Error(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")
-        return
-
-    HTTPS_Status_Unknown(f"{response.status_code} {response.reason}", f"{apiCall} {apiNickname}")
-
-def get_information(informationData, apiCall, fields):
-    
-    :param array sections: The list of sections that make up informationData.
-    
-    sections = ["hosts", "authentication", "tokenData"]
-
-    fieldData = Get_Information_From_File(informationData, apiCall, sections, fields)
-
-    if fieldData == None: # Failed Test.
-        HTTPS_Status_Error("400 Bad Request", apiCall)
-        return 
-
-    return fieldData
-#
 
 
-#
-def API_POST_Login(informationData):
-    
-    Runs the POST Login API call, and records the tokens returned.
-    
-    :param dictionary informationData: The information collected from 'information.json'.
 
-    :return: The dictionary informationData with the updated token data added.
-    
-
-    fields = {"hosts": ["serverHost"], "authentication": ["authentication_key", "refsixUsername", "refsixPassword"], "tokenData": []}
-    fieldData = get_information(informationData, "POST Login", fields)
-    if fieldData == None:
-        return
-
-    (tokenUsername, tokenPassword, expires) = Run_Test("When given valid login details, the API returns a token username, password, and expiry.", api_post_login, fieldData)
-
-    informationData["tokenData"] = {"tokenUsername": tokenUsername, "tokenPassword": tokenPassword, "expires": expires}
-    return informationData
-
-def api_post_login(fieldData):
-    url = fieldData["serverHost"] + "/auth/login"
-    payload = json.dumps({"username": fieldData["refsixUsername"], "password": fieldData["refsixPassword"]})
-    headers = {"Authorisation": f"Basic {fieldData["authentication_key"]}", "Content-Type": "application/json"}
-
-    response = Run_API_Call("POST", "Login", url, headers, payload)
-
-    if (response == None):
-        return ("Fail", f"The API call has not returned any values.")
-    try:
-        tokenUsername = response["token"]
-        tokenPassword = response["password"]
-        expires = response["expires"]
-        return ("Pass", (tokenUsername, tokenPassword, expires))
-    except:
-        return ("Fail", f"The API call response does not contain either a 'token', 'password', or 'expiry' field.")
-#
-
-
-# 
-def API_GET_All_Matches(informationData, sections):
-    
-    Runs the GET All Matches API call, and returns the resulting JSON.
-    
-    :param dictionary informationData: The information collected from 'information.json'.
-    :param array sections: The list of sections that make up informationData.
-
-    :return: The dictionary rawMatchData with the resulting data.
-"""
-
-# Main Code Area
+## Main Code Area
 refsixApi = REFSIX_API("information.json")
 refsixApi.AttemptLoginWithTest()
