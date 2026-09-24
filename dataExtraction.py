@@ -21,165 +21,52 @@ class REFSIX_API:
         The integer timestamp when the login token data will expire.
     """
 
-    _apiAuthorisationData : dict = None
-    _expiryTime : int = None
+# Class Setup
+    _apiAuthorisationData:dict = None
+    _expiryTime:int = None
 
-    def __init__(self, filePath: str):
+    def __init__(self, filePath:str):
         """
-        Initialises an instance of the REFSIX_API class.
+        A public function which initialises an instance of the REFSIX_API class.
 
         Parameters
         ---
         filePath : string 
             The file path for the file containing the private authentication data.
-
-        Returns
-        ---
-            None
         """
 
         self._GetAuthorisationDataWithTest(filePath)
 
 
-    def AttemptLoginWithTest(self):
+    def _GetAuthorisationDataWithTest(self, filePath:str):
         """
-        Attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
-        """
-        
-        responseValues = self._RunAPICall("POST Login")
+        A private function which runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
 
-        test = Test("POST Login provides token data that expires in the future.", datetime.now().timestamp(), 0, 2, GetDataFieldFromJsonForTest, [responseValues, "expires"])
-        (success, self._expiryTime) = test.RunTest()
-
-        self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
-
-
-    def _RunAPICall(self, apiCall):
-        """
-        Recieves the request to run an API call and attempts to carry it out.
-
-        :param string apiCall: The name of the API call you want to make.
+        Parameters
+        ---
+        filePath : string
+            The file path for the relevant file.
         """
 
-        callType = None
-        url = None
-        headers = None
-        payload = None
-        
-        if apiCall == "POST Login":
-            return self._CallPOSTLogin()
-        if apiCall == "GET All Matches":
-            raise NotImplementedError
-        if apiCall == "GET Match":
-            raise NotImplementedError
-        if apiCall == "PUT Match (update)":
-            raise NotImplementedError
-        if apiCall == "POST Match (create)":
-            raise NotImplementedError
-        if apiCall == "DELETE Match":
-            raise NotImplementedError
-        else:
-            raise NameError
-
-
-    def _RunAPICallWithTest(self, callName, callType, url, headers, payload, expectedStatus = 200, dataType = "normal"):
-        """
-        Runs the API call within a test on the status code vs. the inputted data.
-
-        :param string callName: The name of the API call being made.
-        :param string callType: The type of API call being made (GET, POST, PUT, DELETE).
-        :param string url: The URL for the API call.
-        :param dictionary headers: The information needed to make the call.
-        :param string payload: More information needed for the API call.
-        :param integer expectedStatus: The expected HTTPS status code returned with the API call.
-        :param string dataType: The type of data being fed into the call (normal, boundary, erroneous).
-
-        :return: A tuple containing the HTTPS status code and the API response data.
-        """
-        
-        test = Test(f"{callName} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 2, 0, self._run_api_call, [callType, url, headers, payload])
-        (success, response) = test.RunTest()
-
-        self._OutputCallStatus(callName, response.status_code, response.url)
-        return (response.status_code, response.json())
-
-
-    def _OutputCallStatus(self, apiCall, statusCode, request):
-        """
-        Takes a given HTTPS status code and outputs a debug message linking it to the given API call.
-
-        :param string apiCall: The API call that has just been made.
-        :param integer statusCode: A HTTPS status code, being given by the API call.
-        :param string request: The actual request that was made.
-        """
-
-        supportedStatusCodes = {200: "Ok", 400: "Bad Request", 401: "Unauthorised", 404: "Not Found"}
-        outputMessage = f"{apiCall}:"
-
-        if statusCode >= 200 and statusCode <= 299:
-            outputMessage += Fore.GREEN
-        elif statusCode >= 400 and statusCode <= 599:
-            outputMessage += Fore.RED
-        else: # Unsupported Status Codes
-            outputMessage += Fore.YELLOW
-
-        print(outputMessage + f" {statusCode} {supportedStatusCodes[statusCode]}{Style.RESET_ALL} - {request}\n")
-
-
-    def _GetAuthorisationDataWithTest(self, filePath):
-        """
-        Runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
-
-        :param string filePath: The file path for the relevant file.
-        """
-
-        test = Test("The authorisation information file exists and can be read from.", None, 0, 9, self._get_authorisation_data, filePath)
+        test = Test("The authorisation information file exists and can be read from.", None, 0, 9, self._ReadAuthorisationDataFile, filePath)
         (success, response) = test.RunTest()
 
         if success == True:
             self._apiAuthorisationData = response
 
 
-    def _CallPOSTLogin(self):
+    def _ReadAuthorisationDataFile(self, filePath:str):
         """
-        Calls a POST Login request from the API.
+        A private function which takes the given file path, and retrieves the contents before saving them in _apiAuthorisationData.
 
-        :return: A dictionary containing the returned token and password.
-        """
-        
-        inputFields = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
+        Parameters
+        ---
+        filePath : string 
+            The file path for the relevant file.
 
-        url = inputFields["hosts;serverHost"] + "/auth/login"
-        payload = json.dumps({"username": inputFields["authentication;refsixUsername"], "password": inputFields["authentication;refsixPassword"]})
-        headers = {"Authorisation": f"Basic {inputFields["authentication;authentication_key"]}", "Content-Type": "application/json"}
-
-        (status, response) = self._RunAPICallWithTest("POST Login", "POST", url, headers, payload)
-
-        return GetDataFromJson(response, ["token", "password", "expires"])
-
-
-    def _run_api_call(self, parameters):
-        """
-        Actually runs the API call.
-
-        :param string callType: The type of API call being made (GET, POST, PUT, DELETE) [in parameters, index 0].
-        :param string url: The URL for the API call [in parameters, index 1].
-        :param dictionary headers: The information needed to make the call [in parameters, index 2].
-        :param string payload: More information needed for the API call [in parameters, index 3].
-
-        :return: The response object from the request.
-        """
-
-        return requests.request(parameters[0], parameters[1], headers=parameters[2], data=parameters[3])
-
-    
-    def _get_authorisation_data(self, filePath):
-        """
-        Takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
-
-        :param string filePath: The file path for the relevant file.
-
-        :return: The data from the file, or None if it fails.
+        Returns
+        ---
+            The data from the file, or None if it fails.
         """
 
         try:
@@ -188,9 +75,182 @@ class REFSIX_API:
             return None
 
         try:
-            return json.load(file)
+            return dict(json.load(file))
         except TypeError:
             return None
+#
+
+# All Calls
+    def _RunAPICallWithTest(self, apiRequest:Request, expectedStatus:int = 200, dataType:str = "normal"):
+        """
+        A private function which runs a test on the status code retrieved from a given API call. It then returns both the status code and the response.
+
+        Parameters
+        ---
+        apiRequest : Request 
+            The API request to be run.
+        expectedStatus : integer (optional)
+            The expected HTTPS status code returned with the API call. [Default = 200]
+        dataType : string (optional)
+            The type of data being fed into the call (normal, boundary, erroneous). [Default = "normal"]
+
+        Returns
+        ---
+            A boolean of whether the test passed or not.
+        """
+        
+        test = Test(f"{apiRequest.GetName()} returns a {expectedStatus} status code when given {dataType} inputs.", expectedStatus, 0, 0, apiRequest.RunCall)
+        (success, response) = test.RunTest()
+
+        return success
+#
+
+# POST Login
+    def AttemptLoginWithTest(self):
+        """
+        A public function which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
+        """
+        
+        responseValues = self._CallPOSTLogin()
+
+        test = Test("POST Login provides token data that expires in the future.", datetime.now().timestamp(), 0, 2, GetDataFieldFromJsonForTest, [responseValues, "expires"])
+        (success, self._expiryTime) = test.RunTest()
+        if success:
+            self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
+
+
+    def _CallPOSTLogin(self):
+        """
+        A private funciton which calls a POST Login request from the API.
+
+        Returns
+        ---
+            A dictionary containing the returned token and password.
+        """
+
+        postRequest = self._FormatPOSTLoginRequest()
+        testResult = self._RunAPICallWithTest(postRequest)
+        return GetDataFromJson(postRequest.GetResponseJson(), ["token", "password", "expires"])
+
+
+    def _FormatPOSTLoginRequest(self):
+        """
+        A private function which formats all the elements required to make a POST Login request.
+        
+        Returns
+        ---
+            A Request object containing the POST Login request.
+        """
+
+        inputFields = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
+                
+        url = inputFields["hosts;serverHost"] + "/auth/login"
+        headers = {"Authorisation": f"Basic {inputFields["authentication;authentication_key"]}", "Content-Type": "application/json"}
+        payload = json.dumps({"username": inputFields["authentication;refsixUsername"], "password": inputFields["authentication;refsixPassword"]})
+        
+        return Request(0, url, headers, payload)
+#
+
+##
+
+
+## Request Class
+class Request:
+    """
+    The class responsible for holding request data and actually making API calls.
+
+    Attributes
+    ---
+    _nickname : string (private)
+        The name of the API call, including the call type.
+    _type : string (private)
+        The type of request.
+    _url : string (private)
+        The url for the request.
+    _headers : dict (private)
+        A dictionary containing the headers for the request.
+    _payload : string (private)
+        The payload for the request.
+    _response : requests.Response (private)
+        The response recieved after running the request.
+    """
+
+# Class Setup
+    _nickname:str = None
+    _type:str = None
+
+    _url:str = None
+    _headers:dict = None
+    _payload:str = None
+
+    _response:requests.Response = None
+
+    def GetName(self): return self._nickname
+    def GetStatusCode(self): return self._response.status_code
+    def GetResponseJson(self): return dict(self._response.json())
+
+
+    def __init__(self, call:int, url:str, headers:dict, payload:str):
+        """
+        A public method which initialises an instance of the Request class.
+
+        Parameters
+        ---
+        call : int
+            The call being made (0: POST Login... to be implemented.)
+        url : str
+            The URL of the request being made.
+        headers : dict 
+            The headers required for the request
+        payload : str
+            The payload required to make the request.
+        """
+
+        if call == 0:
+            self._nickname = "POST Login"
+            self._type = "POST"
+        else:
+            return
+
+        self._url = url
+        self._headers = headers
+        self._payload = payload
+#
+
+# Running Requests
+    def RunCall(self):
+        """
+        A public method that actually runs the API call and outputs the resulting status code.
+
+        Returns
+        ---
+            The status code of the operation.
+        """
+
+        self._response = requests.request(self._type, self._url, headers=self._headers, data=self._payload)
+        self._OutputCallStatus()
+
+        return self.GetStatusCode()
+
+
+    def _OutputCallStatus(self):
+        """
+        A private method which outputs a message based on the HTTPS status code recieved from the call's response.
+        """
+        
+        supportedStatusCodes = {200: "Ok", 400: "Bad Request", 401: "Unauthorised", 404: "Not Found"}
+        outputMessage = f"{self._nickname}:"
+
+        if self._response.status_code >= 200 and self._response.status_code <= 299:
+            outputMessage += Fore.GREEN
+        elif self._response.status_code >= 400 and self._response.status_code <= 599:
+            outputMessage += Fore.RED
+        else: # Unsupported Status Codes
+            outputMessage += Fore.YELLOW
+
+        print(f"{outputMessage} {self._response.status_code} {supportedStatusCodes[self._response.status_code]}{Style.RESET_ALL} - {self._url}\n")
+#
+
 ##
 
 
@@ -210,7 +270,7 @@ class Test:
 
         :param string test: The test to be carried out.
         :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length, 2: status).
+        :param any responseType: What response you want the class to test (0: value, 1: length).
         :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
         :param Function function: The function to be tested.
         :param (optional) any functionParameters: The parameter(s) to be passed into the function.
@@ -268,7 +328,7 @@ class TestCondition:
         Initialises an instance of the Test Condition class.
 
         :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length, 2: status).
+        :param any responseType: What response you want the class to test (0: value, 1: length).
         :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
         """
 
@@ -296,8 +356,6 @@ class TestCondition:
                 responseValue = math.ceil(math.log10(response))
             else:
                 responseValue = len(response)
-        if self._responseType == 2:
-            responseValue = response.status_code
 
         # Evaluating the response.
         match self._responseComparison:
