@@ -18,6 +18,8 @@ class REFSIX_API:
 
         self._GetAuthorisationDataWithTest(filePath)
 
+        data = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;refsixUsername"])
+
 
     def _OutputCallStatus(self, apiCall, statusCode):
         """
@@ -195,74 +197,54 @@ class TestCondition:
             case _:
                 return False
 ##
+
+
+## Utility Functions
+def GetDataFromJson(json, returnFields):
+    """
+    Takes the JSON and navigates it to find the given fields, which are then returned.
+
+    :param dictionary json: The JSON data.
+    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
+
+    :return: A dictionary of the return fields and their values.
+    """
+
+    retrievedFields = {}
+    for field in returnFields:
+        retrievedFields[field] = get_data_from_json(json, field)
+
+    return retrievedFields
+
+
+def get_data_from_json(json, path):
+    """
+    Recursively navigates through the JSON by breaking down the given path.
+
+    :param dictionary json: The JSON data.
+    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
+
+    :return: The value stored at the given location, or None if there is a KeyError.
+    """
+    
+    seperatorIndex = path.find(";")
+
+    if seperatorIndex == -1:
+        try:
+            return json[path]
+        except:
+            return None
+
+    parent = path[:seperatorIndex]
+    path = path[seperatorIndex+1:]
+
+    try:
+        return get_data_from_json(json[parent], path)
+    except:
+        return None
+   
+##
 """"
-
-#
-def Read_Information_File(file):
-    
-    Takes the 'information.json' file and returns the contents as a dictionary. The file has been deliberately excluded from the repository for security reasons.
-
-    :param string file: The file path for 'information.json'.
-
-    :return: A dictionary containing the JSON data from the file.
-
-    :raises: The test fails if the file cannot be found, or if it cannot be read.
-    
-
-    return Run_Test(f"Information file '{file}' exists and can be read.", read_information_file, {"file": file})
-
-def read_information_file(parameters):
-    file = parameters["file"]
-    try:
-        with open(file, "r") as jsonFile:
-            data = json.load(jsonFile)
-        return ("Pass", data)
-    
-    except FileNotFoundError:
-        return ("Fail", f"AssertionError: File does not exist.\n- File: '{file}'.")
-    except TypeError:
-        return ("Fail", f"AssertionError: File cannot be read.\n- File: '{file}'.")
-#
-
-
-#
-def Get_Information_From_File(informationData, apiCall, sections, fields):
-    
-        Takes a dictionary of JSON data and extracts the requested fields and their data.
-    
-        :param dictionary informationData: The information collected from 'information.json'.
-        :param string apiCall: The name of the API call.
-        :param array sections: The list of sections that make up informationData.
-        :param dictionary fields: The list of fields that need to be extracted, sorted by section.
-    
-        :return: A dictionary containing the extracted fields and their corresponding data.
-    
-        :raises: The test fails if a requested field cannot be found.
-        
-    
-    return Run_Test(f"Information can be collected from the file for {apiCall}.", get_information_from_file, (informationData, sections, fields))
-
-def get_information_from_file(parameters):
-    informationData = parameters[0]
-    sections = parameters[1]
-    fields = parameters[2]
-
-    information = {}
-    currentField = ""
-    currentSection = ""
-
-    try:
-        for section in sections:
-            currentSection = section
-            for field in fields[currentSection]:
-                currentField = field
-                information[currentField] = informationData[currentSection][currentField]
-        return ("Pass", information)
-    except (KeyError, TypeError):
-        return ("Fail", f"AssertionError: Key does not exist.\n- Section: '{currentSection}', Field: '{currentField}'.")
-#
-
-
 #
 def Run_API_Call(apiCall, apiNickname, url, headers, payload):
     
