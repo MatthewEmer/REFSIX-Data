@@ -27,7 +27,7 @@ class REFSIX_API:
 
     def __init__(self, filePath:str):
         """
-        A public function which initialises an instance of the REFSIX_API class.
+        A public method which initialises an instance of the REFSIX_API class.
 
         Parameters
         ---
@@ -40,7 +40,7 @@ class REFSIX_API:
 
     def _GetAuthorisationDataWithTest(self, filePath:str):
         """
-        A private function which runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
+        A private method which runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
 
         Parameters
         ---
@@ -56,7 +56,7 @@ class REFSIX_API:
 
     def _ReadAuthorisationDataFile(self, filePath:str):
         """
-        A private function which takes the given file path, and retrieves the contents before saving them in _apiAuthorisationData.
+        A private method which takes the given file path, and retrieves the contents before saving them in _apiAuthorisationData.
 
         Parameters
         ---
@@ -82,7 +82,7 @@ class REFSIX_API:
 # All Calls
     def _RunAPICallWithTest(self, apiRequest:Request, expectedStatus:int = 200, dataType:str = "normal"):
         """
-        A private function which runs a test on the status code retrieved from a given API call. It then returns both the status code and the response.
+        A private method which runs a test on the status code retrieved from a given API call. It then returns both the status code and the response.
 
         Parameters
         ---
@@ -101,7 +101,7 @@ class REFSIX_API:
 
     def _CheckExpiredTokens(self):
         """
-        A private function which checks whether the authentication tokens are still valid.
+        A private method which checks whether the authentication tokens are still valid.
 
         Returns
         ---
@@ -113,7 +113,7 @@ class REFSIX_API:
 # POST Login
     def AttemptLoginWithTest(self):
         """
-        A public function which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
+        A public method which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
         """
 
         if self._apiAuthorisationData == None:
@@ -131,7 +131,7 @@ class REFSIX_API:
 
     def _CallPOSTLogin(self):
         """
-        A private funciton which calls a POST Login request from the API.
+        A private method which calls a POST Login request from the API.
 
         Returns
         ---
@@ -145,7 +145,7 @@ class REFSIX_API:
 
     def _FormatPOSTLoginRequest(self):
         """
-        A private function which formats all the elements required to make a POST Login request.
+        A private method which formats all the elements required to make a POST Login request.
         
         Returns
         ---
@@ -292,9 +292,9 @@ class Test:
     _function:function = None
     _functionParameters = None
 
-    def __init__(self, test, testCondition, function, functionParameters = None):
+    def __init__(self, test:str, testCondition:TestCondition, function:function, functionParameters = None):
         """
-        Initialises an instance of the Test class. 
+        A public method which initialises an instance of the Test class. 
 
         Parameters
         ---
@@ -321,7 +321,7 @@ class Test:
 # Running The Test
     def RunTest(self):
         """
-        A public function which runs the test and outputs the outcome.
+        A public method which runs the test and outputs the outcome.
 
         Returns
         ---
@@ -342,11 +342,11 @@ class Test:
 
     def _OutputOutcome(self, returnValue):
         """
-        A private function which takes the outcome of the test, and outputs a debug message.
+        A private method which takes the outcome of the test, and outputs a debug message.
 
         Parameters
         ---
-        returnValue : string
+        returnValue : any
             The return value from the tested function.
         """
 
@@ -365,61 +365,88 @@ class Test:
 
 ## Test Condition Class
 class TestCondition:
+    """
+    The class responsible for determining the outcome of a test.
+
+    Attributes
+    ---
+    _expectedResponse : any (private)
+        The expected return value from the function being tested.
+    _conditionType : integer (private)
+        The type of condition being tested (0: the response value, 1: the length of the response).
+    _comparisonMode : integer (private)
+        The type of comparison between the expected and actual responses. (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
+    """
+
+# Class Setup
     _expectedResponse = None
-    _responseType = None
-    _responseComparison = None
+    _conditionType:int = None
+    _comparisonMode:int = None
 
-    def __init__(self, expectedResponse, responseType, responseComparison):
+    def __init__(self, expectedResponse, conditionType:int = 0, comparisonMode:int = 0):
         """
-        Initialises an instance of the Test Condition class.
+        A public method which initialises an instance of the TestCondition class.
 
-        :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length).
-        :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
+        Parameters
+        ---
+        expectedResponse : any
+            The expected return value from the function being tested.
+        conditionType : integer (optional)
+            The type of condition being tested (0: the response value, 1: the length of the response). [Default: 0]
+        comparisonMode : integer (optional)
+            The type of comparison between the expected and actual responses. (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq). [Default = 0]
         """
 
         self._expectedResponse = expectedResponse
-        self._responseType = responseType
-        self._responseComparison = responseComparison
+        self._conditionType = conditionType
+        self._comparisonMode = comparisonMode
 
 
     def GetExpectedResponse(self): return self._expectedResponse
-    def GetComparisonType(self): return self._responseComparison
+    def GetComparisonType(self): return self._comparisonMode
+#
 
-
+# Testing the Response
     def TestResponse(self, response):
         """
-        Tests whether the given response meets the requirements provided.
+        A public method that tests whether the given response meets the requirements provided.
 
-        :param any response: The response provided by the Test class.
+        Parameters
+        ---
+        response : any 
+            The response provided by the Test class.
 
-        :return: True if the test passes, and False if the test fails.
+        Returns
+        ---
+            A boolean value which is true if the test passes, and false if the test fails.
         """
 
         # Formatting the response.
         responseValue = response
-        if self._responseType == 1:
+        if self._conditionType == 1:
             if type(response) == int:
                 responseValue = math.ceil(math.log10(response))
             else:
                 responseValue = len(response)
 
         # Evaluating the response.
-        match self._responseComparison:
+        match self._comparisonMode:
             case -2:
-                return self._expectedResponse > responseValue
+                return bool(self._expectedResponse > responseValue)
             case -1:
-                return self._expectedResponse >= responseValue
+                return bool(self._expectedResponse >= responseValue)
             case 0:
-                return self._expectedResponse == responseValue
+                return bool(self._expectedResponse == responseValue)
             case 1:
-                return self._expectedResponse <= responseValue
+                return bool(self._expectedResponse <= responseValue)
             case 2:
-                return self._expectedResponse <= responseValue
+                return bool(self._expectedResponse <= responseValue)
             case 9:
-                return self._expectedResponse != responseValue
-            case _:
+                return bool(self._expectedResponse != responseValue)
+            case _: # Invalid method
                 return False
+#
+
 ##
 
 
