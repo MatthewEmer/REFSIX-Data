@@ -22,12 +22,12 @@ class REFSIX_API:
     """
 
 # Class Setup
-    _apiAuthorisationData:dict = None
+    _apiAuthorisationData:JsonData = None
     _expiryTime:int = None
 
     def __init__(self, filePath:str):
         """
-        A public function which initialises an instance of the REFSIX_API class.
+        A public method which initialises an instance of the REFSIX_API class.
 
         Parameters
         ---
@@ -35,54 +35,13 @@ class REFSIX_API:
             The file path for the file containing the private authentication data.
         """
 
-        self._GetAuthorisationDataWithTest(filePath)
-
-
-    def _GetAuthorisationDataWithTest(self, filePath:str):
-        """
-        A private function which runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
-
-        Parameters
-        ---
-        filePath : string
-            The file path for the relevant file.
-        """
-
-        testCondition = TestCondition(None, 0, 9)
-        test = Test("The authorisation information file exists and can be read from.", testCondition, self._ReadAuthorisationDataFile, filePath)
-        
-        self._apiAuthorisationData = test.RunTest()
-
-
-    def _ReadAuthorisationDataFile(self, filePath:str):
-        """
-        A private function which takes the given file path, and retrieves the contents before saving them in _apiAuthorisationData.
-
-        Parameters
-        ---
-        filePath : string 
-            The file path for the relevant file.
-
-        Returns
-        ---
-            The data from the file, or None if it fails.
-        """
-
-        try:
-            file = open(filePath, "r")
-        except FileNotFoundError:
-            return None
-
-        try:
-            return dict(json.load(file))
-        except TypeError:
-            return None
+        self._apiAuthorisationData = JsonData(filePath=filePath)
 #
 
 # All Calls
     def _RunAPICallWithTest(self, apiRequest:Request, expectedStatus:int = 200, dataType:str = "normal"):
         """
-        A private function which runs a test on the status code retrieved from a given API call. It then returns both the status code and the response.
+        A private method which runs a test on the status code retrieved from a given API call. It then returns both the status code and the response.
 
         Parameters
         ---
@@ -101,7 +60,7 @@ class REFSIX_API:
 
     def _CheckExpiredTokens(self):
         """
-        A private function which checks whether the authentication tokens are still valid.
+        A private method which checks whether the authentication tokens are still valid.
 
         Returns
         ---
@@ -113,7 +72,7 @@ class REFSIX_API:
 # POST Login
     def AttemptLoginWithTest(self):
         """
-        A public function which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
+        A public method which attempts to format and then make a API POST request to the authentication server to get up-to-date token data.
         """
 
         if self._apiAuthorisationData == None:
@@ -121,38 +80,40 @@ class REFSIX_API:
         
         responseValues = self._CallPOSTLogin()
 
-        testCondition = TestCondition(datetime.now().timestamp(), 0, 2)
-        test = Test("POST Login provides token data that expires in the future.", testCondition, GetDataFieldFromJsonForTest, [responseValues, "expires"])
+        self._apiAuthorisationData.SetJsonValue("tokenData", { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] })
+
+        testCondition = TestCondition(datetime.now().timestamp(), comparisonMode=2)
+        test = Test("POST Login provides token data that expires in the future.", testCondition, self._apiAuthorisationData.GetSingleFieldValue, "tokenData;expires")
         self._expiryTime = test.RunTest()
 
-        if test.GetResult():
-            self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
+        if test.GetResult() == False:
+            self._apiAuthorisationData.SetJsonValue("tokenData", { "tokenUsername": "none", "tokenPassword": "none", "expires": "none" })
 
 
     def _CallPOSTLogin(self):
         """
-        A private funciton which calls a POST Login request from the API.
+        A private method which calls a POST Login request from the API.
 
         Returns
         ---
-            A dictionary containing the returned token and password.
+            A dictionary containing the returned token, password, and expiry time.
         """
 
         postRequest = self._FormatPOSTLoginRequest()
         self._RunAPICallWithTest(postRequest)
-        return GetDataFromJson(postRequest.GetResponseJson(), ["token", "password", "expires"])
+        return postRequest.GetResponseJson().GetFieldValues(["token", "password", "expires"])
 
 
     def _FormatPOSTLoginRequest(self):
         """
-        A private function which formats all the elements required to make a POST Login request.
+        A private method which formats all the elements required to make a POST Login request.
         
         Returns
         ---
             A Request object containing the POST Login request.
         """
 
-        inputFields = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
+        inputFields = self._apiAuthorisationData.GetFieldValues(["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
                 
         url = inputFields["hosts;serverHost"] + "/auth/login"
         headers = {"Authorisation": f"Basic {inputFields["authentication;authentication_key"]}", "Content-Type": "application/json"}
@@ -162,6 +123,7 @@ class REFSIX_API:
 #
 
 ##
+
 
 
 ## Request Class
@@ -197,7 +159,7 @@ class Request:
 
     def GetName(self): return self._nickname
     def GetStatusCode(self): return self._response.status_code
-    def GetResponseJson(self): return dict(self._response.json())
+    def GetResponseJson(self): return JsonData(jsonData=self._response.json())
 
 
     def __init__(self, call:int, url:str, headers:dict, payload:str):
@@ -292,9 +254,9 @@ class Test:
     _function:function = None
     _functionParameters = None
 
-    def __init__(self, test, testCondition, function, functionParameters = None):
+    def __init__(self, test:str, testCondition:TestCondition, function:function, functionParameters = None):
         """
-        Initialises an instance of the Test class. 
+        A public method which initialises an instance of the Test class. 
 
         Parameters
         ---
@@ -321,7 +283,7 @@ class Test:
 # Running The Test
     def RunTest(self):
         """
-        A public function which runs the test and outputs the outcome.
+        A public method which runs the test and outputs the outcome.
 
         Returns
         ---
@@ -342,11 +304,11 @@ class Test:
 
     def _OutputOutcome(self, returnValue):
         """
-        A private function which takes the outcome of the test, and outputs a debug message.
+        A private method which takes the outcome of the test, and outputs a debug message.
 
         Parameters
         ---
-        returnValue : string
+        returnValue : any
             The return value from the tested function.
         """
 
@@ -365,111 +327,261 @@ class Test:
 
 ## Test Condition Class
 class TestCondition:
+    """
+    The class responsible for determining the outcome of a test.
+
+    Attributes
+    ---
+    _expectedResponse : any (private)
+        The expected return value from the function being tested.
+    _conditionType : integer (private)
+        The type of condition being tested (0: the response value, 1: the length of the response).
+    _comparisonMode : integer (private)
+        The type of comparison between the expected and actual responses. (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
+    """
+
+# Class Setup
     _expectedResponse = None
-    _responseType = None
-    _responseComparison = None
+    _conditionType:int = None
+    _comparisonMode:int = None
 
-    def __init__(self, expectedResponse, responseType, responseComparison):
+    def __init__(self, expectedResponse, conditionType:int = 0, comparisonMode:int = 0):
         """
-        Initialises an instance of the Test Condition class.
+        A public method which initialises an instance of the TestCondition class.
 
-        :param any expectedResponse: The expected return value from the function.
-        :param any responseType: What response you want the class to test (0: value, 1: length).
-        :param any responseComparison: How you want the class to test the response (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq).
+        Parameters
+        ---
+        expectedResponse : any
+            The expected return value from the function being tested.
+        conditionType : integer (optional)
+            The type of condition being tested (0: the response value, 1: the length of the response). [Default: 0]
+        comparisonMode : integer (optional)
+            The type of comparison between the expected and actual responses. (-2: anything less than expected, -1: leq expected, 0: equal to expected, 1: geq expected, 2: anything greater than expected, 9: neq). [Default = 0]
         """
 
         self._expectedResponse = expectedResponse
-        self._responseType = responseType
-        self._responseComparison = responseComparison
+        self._conditionType = conditionType
+        self._comparisonMode = comparisonMode
 
 
     def GetExpectedResponse(self): return self._expectedResponse
-    def GetComparisonType(self): return self._responseComparison
+    def GetComparisonType(self): return self._comparisonMode
+#
 
-
+# Testing the Response
     def TestResponse(self, response):
         """
-        Tests whether the given response meets the requirements provided.
+        A public method that tests whether the given response meets the requirements provided.
 
-        :param any response: The response provided by the Test class.
+        Parameters
+        ---
+        response : any 
+            The response provided by the Test class.
 
-        :return: True if the test passes, and False if the test fails.
+        Returns
+        ---
+            A boolean value which is true if the test passes, and false if the test fails.
         """
 
         # Formatting the response.
         responseValue = response
-        if self._responseType == 1:
+        if self._conditionType == 1:
             if type(response) == int:
                 responseValue = math.ceil(math.log10(response))
             else:
                 responseValue = len(response)
 
         # Evaluating the response.
-        match self._responseComparison:
+        match self._comparisonMode:
             case -2:
-                return self._expectedResponse > responseValue
+                return bool(self._expectedResponse > responseValue)
             case -1:
-                return self._expectedResponse >= responseValue
+                return bool(self._expectedResponse >= responseValue)
             case 0:
-                return self._expectedResponse == responseValue
+                return bool(self._expectedResponse == responseValue)
             case 1:
-                return self._expectedResponse <= responseValue
+                return bool(self._expectedResponse <= responseValue)
             case 2:
-                return self._expectedResponse <= responseValue
+                return bool(self._expectedResponse <= responseValue)
             case 9:
-                return self._expectedResponse != responseValue
-            case _:
+                return bool(self._expectedResponse != responseValue)
+            case _: # Invalid method
                 return False
+#
+
 ##
 
 
-## Utility Functions
-def GetDataFromJson(json, returnFields):
+
+## JSON Handling
+class JsonData:
     """
-    Takes the JSON and navigates it to find the given fields, which are then returned.
-
-    :param dictionary json: The JSON data.
-    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
-
-    :return: A dictionary of the return fields and their values.
-    """
-
-    retrievedFields = {}
-    for field in returnFields:
-        retrievedFields[field] = get_data_from_json(json, field)
-
-    return retrievedFields
-
-
-def GetDataFieldFromJsonForTest(parameters): return GetDataFromJson(parameters[0], [parameters[1]])[parameters[1]]
-
-
-def get_data_from_json(json, path):
-    """
-    Recursively navigates through the JSON by breaking down the given path.
-
-    :param dictionary json: The JSON data.
-    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
-
-    :return: The value stored at the given location, or None if there is a KeyError.
+    A class which is responsible for handling JSON data.
+    
+    Attributes
+    ---
+    _jsonData : dictionary
+        The JSON data.
     """
 
-    seperatorIndex = path.find(";")
+# Class Setup
+    _jsonData:dict = None
 
-    if seperatorIndex == -1:
+    def __init__(self, jsonData:dict = None, filePath:str = None):
+        """
+        A public method which initialises an instance of the JsonHandler class.
+
+        Parameters
+        ---
+        jsonData : dictionary (optional)
+            The JSON data.
+        filePath : string (optional)
+            The file path for a JSON file.
+        """
+
+        self._jsonData = jsonData
+
+        if self._jsonData == None:
+            self.ReadFileWithTest(filePath)
+#
+
+# Get JSON Data From File.
+    def ReadFileWithTest(self, filePath:str):
+        """
+        A public method which runs a test which takes the given file path, and retrieves the contents, before saving them in _jsonData.
+
+        Parameters
+        ---
+        filePath : string
+            The file path for the relevant file.
+        """
+
+        testCondition = TestCondition(None, 0, 9)
+        test = Test(f"The JSON '{filePath}' file exists and can be read from.", testCondition, self._ReadJsonDataFile, filePath)
+        
+        self._jsonData = test.RunTest()
+
+
+    def _ReadJsonDataFile(self, filePath:str):
+        """
+        A private method which takes the given file path, and retrieves, and then returns the contents. 
+
+        Parameters
+        ---
+        filePath : string 
+            The file path for the relevant file.
+
+        Returns
+        ---
+            The data from the file, or None if it fails.
+        """
+
         try:
-            return json[path]
-        except:
+            file = open(filePath, "r")
+        except FileNotFoundError:
             return None
 
-    parent = path[:seperatorIndex]
-    path = path[seperatorIndex+1:]
+        try:
+            return dict(json.load(file))
+        except TypeError:
+            return None
+#
 
-    try:
-        return get_data_from_json(json[parent], path)
-    except:
-        return None
-   
+# Get Data From JSON.
+    def GetFieldValues(self, returnFields:list):
+        """
+        A public method which takes the JSON and navigates it to find the given fields, which are then returned.
+
+        Parameters
+        ---
+        returnFields : list
+            The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
+
+        Returns
+        ---
+            A dictionary of the return fields and their values.
+        """
+
+        retrievedFields = {}
+        for field in returnFields:
+            retrievedFields[field] = self._TraverseJson(field, self._jsonData)
+
+        return retrievedFields
+
+
+    def GetSingleFieldValue(self, returnField:str):
+        """
+        A public method which takes the JSON and navigates it to find the given field and returns its value.
+
+        Parameters
+        ---
+        returnField : string
+            The field to be returned.
+
+        Returns
+        ---
+            The value stored at the requested location.
+        """
+        return self.GetFieldValues([returnField])[returnField]
+
+
+    def _TraverseJson(self, path:str, json:dict):
+        """
+        A private function which recursively navigates through the JSON by breaking down the given path.
+
+        Parameters
+        ---
+        path : string
+            The path through the JSON data to the field. 
+        json : dict
+            The JSON data to be navigated
+
+        Returns
+        ---
+            The value stored at the given location, or None if there is a KeyError.
+        """
+
+        seperatorIndex = path.find(";")
+
+        if seperatorIndex == -1:
+            try:
+                return json[path]
+            except:
+                return None
+
+        try:
+            json = json[path[:seperatorIndex]]
+            path = path[seperatorIndex+1:]
+
+            return self._TraverseJson(path, json)
+        except:
+            return None
+#
+
+# Set JSON Values
+    def SetJsonValue(self, path:str, value):
+        """
+        A public function which changes the value of the data at the JSON path.
+
+        Parameters
+        ---
+        path : string
+            The path to the value to be set.
+        value : any
+            The value to be placed at the path.
+
+        Returns
+        ---
+            A boolean value whose value corresponds to whether the values have been set.
+        """
+
+        try:
+            self._jsonData[path] = value
+            return True
+        except:
+            return False
+#
+
 ##
 
 
