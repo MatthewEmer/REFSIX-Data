@@ -16,7 +16,7 @@ The next step for that project, and one that I never got to start, was then inte
 
 ## Development & Maintenance
 
-![GitHub language count](https://img.shields.io/github/languages/count/MatthewEmer/REFSIX-Data) ![GitHub top language](https://img.shields.io/github/languages/top/MatthewEmer/REFSIX-Data) ![GitHub Release](https://img.shields.io/github/v/release/MatthewEmer/REFSIX-Data) ![GitHub Release Date](https://img.shields.io/github/release-date/MatthewEmer/REFSIX-Data) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/MatthewEmer/REFSIX-Data/latest)
+![GitHub language count](https://img.shields.io/github/languages/count/MatthewEmer/REFSIX-Data) ![GitHub top language](https://img.shields.io/github/languages/top/MatthewEmer/REFSIX-Data) 
 
 This project is still in development.
 
