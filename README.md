@@ -1,6 +1,6 @@
 # REFSIX Data
 
-![GitHub License](https://img.shields.io/github/license/MatthewEmer/REFSIX-Data) ![GitHub top language](https://img.shields.io/github/languages/top/MatthewEmer/REFSIX-Data) ![GitHub Release](https://img.shields.io/github/v/release/MatthewEmer/REFSIX-Data) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square) ![GitHub Issues](https://img.shields.io/github/issues/MatthewEmer/REFSIX-Data) ![Repo Size](https://img.shields.io/github/repo-size/MatthewEmer/REFSIX-Data) ![GitHub last commit](https://img.shields.io/github/last-commit/MatthewEmer/REFSIX-Data)
+![GitHub License](https://img.shields.io/github/license/MatthewEmer/REFSIX-Data) ![GitHub top language](https://img.shields.io/github/languages/top/MatthewEmer/REFSIX-Data) ![GitHub Issues](https://img.shields.io/github/issues/MatthewEmer/REFSIX-Data) ![Repo Size](https://img.shields.io/github/repo-size/MatthewEmer/REFSIX-Data) ![GitHub last commit](https://img.shields.io/github/last-commit/MatthewEmer/REFSIX-Data)
 
 ## Description
 
