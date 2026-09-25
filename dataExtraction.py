@@ -22,7 +22,7 @@ class REFSIX_API:
     """
 
 # Class Setup
-    _apiAuthorisationData:dict = None
+    _apiAuthorisationData:JsonData = None
     _expiryTime:int = None
 
     def __init__(self, filePath:str):
@@ -35,48 +35,7 @@ class REFSIX_API:
             The file path for the file containing the private authentication data.
         """
 
-        self._GetAuthorisationDataWithTest(filePath)
-
-
-    def _GetAuthorisationDataWithTest(self, filePath:str):
-        """
-        A private method which runs a test which takes the given file path, and retrieves the contents, before saving them in _apiAuthorisationData.
-
-        Parameters
-        ---
-        filePath : string
-            The file path for the relevant file.
-        """
-
-        testCondition = TestCondition(None, 0, 9)
-        test = Test("The authorisation information file exists and can be read from.", testCondition, self._ReadAuthorisationDataFile, filePath)
-        
-        self._apiAuthorisationData = test.RunTest()
-
-
-    def _ReadAuthorisationDataFile(self, filePath:str):
-        """
-        A private method which takes the given file path, and retrieves the contents before saving them in _apiAuthorisationData.
-
-        Parameters
-        ---
-        filePath : string 
-            The file path for the relevant file.
-
-        Returns
-        ---
-            The data from the file, or None if it fails.
-        """
-
-        try:
-            file = open(filePath, "r")
-        except FileNotFoundError:
-            return None
-
-        try:
-            return dict(json.load(file))
-        except TypeError:
-            return None
+        self._apiAuthorisationData = JsonData(filePath=filePath)
 #
 
 # All Calls
@@ -121,12 +80,14 @@ class REFSIX_API:
         
         responseValues = self._CallPOSTLogin()
 
-        testCondition = TestCondition(datetime.now().timestamp(), 0, 2)
-        test = Test("POST Login provides token data that expires in the future.", testCondition, GetDataFieldFromJsonForTest, [responseValues, "expires"])
+        self._apiAuthorisationData.SetJsonValue("tokenData", { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] })
+
+        testCondition = TestCondition(datetime.now().timestamp(), comparisonMode=2)
+        test = Test("POST Login provides token data that expires in the future.", testCondition, self._apiAuthorisationData.GetSingleFieldValue, "tokenData;expires")
         self._expiryTime = test.RunTest()
 
-        if test.GetResult():
-            self._apiAuthorisationData["tokenData"] = { "tokenUsername": responseValues["token"], "tokenPassword": responseValues["password"], "expires": responseValues["expires"] }
+        if test.GetResult() == False:
+            self._apiAuthorisationData.SetJsonValue("tokenData", { "tokenUsername": "none", "tokenPassword": "none", "expires": "none" })
 
 
     def _CallPOSTLogin(self):
@@ -135,12 +96,12 @@ class REFSIX_API:
 
         Returns
         ---
-            A dictionary containing the returned token and password.
+            A dictionary containing the returned token, password, and expiry time.
         """
 
         postRequest = self._FormatPOSTLoginRequest()
         self._RunAPICallWithTest(postRequest)
-        return GetDataFromJson(postRequest.GetResponseJson(), ["token", "password", "expires"])
+        return postRequest.GetResponseJson().GetFieldValues(["token", "password", "expires"])
 
 
     def _FormatPOSTLoginRequest(self):
@@ -152,7 +113,7 @@ class REFSIX_API:
             A Request object containing the POST Login request.
         """
 
-        inputFields = GetDataFromJson(self._apiAuthorisationData, ["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
+        inputFields = self._apiAuthorisationData.GetFieldValues(["hosts;serverHost", "authentication;authentication_key", "authentication;refsixUsername", "authentication;refsixPassword"])
                 
         url = inputFields["hosts;serverHost"] + "/auth/login"
         headers = {"Authorisation": f"Basic {inputFields["authentication;authentication_key"]}", "Content-Type": "application/json"}
@@ -162,6 +123,7 @@ class REFSIX_API:
 #
 
 ##
+
 
 
 ## Request Class
@@ -197,7 +159,7 @@ class Request:
 
     def GetName(self): return self._nickname
     def GetStatusCode(self): return self._response.status_code
-    def GetResponseJson(self): return dict(self._response.json())
+    def GetResponseJson(self): return JsonData(jsonData=self._response.json())
 
 
     def __init__(self, call:int, url:str, headers:dict, payload:str):
@@ -450,53 +412,176 @@ class TestCondition:
 ##
 
 
-## Utility Functions
-def GetDataFromJson(json, returnFields):
+
+## JSON Handling
+class JsonData:
     """
-    Takes the JSON and navigates it to find the given fields, which are then returned.
-
-    :param dictionary json: The JSON data.
-    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
-
-    :return: A dictionary of the return fields and their values.
-    """
-
-    retrievedFields = {}
-    for field in returnFields:
-        retrievedFields[field] = get_data_from_json(json, field)
-
-    return retrievedFields
-
-
-def GetDataFieldFromJsonForTest(parameters): return GetDataFromJson(parameters[0], [parameters[1]])[parameters[1]]
-
-
-def get_data_from_json(json, path):
-    """
-    Recursively navigates through the JSON by breaking down the given path.
-
-    :param dictionary json: The JSON data.
-    :param array returnFields: The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
-
-    :return: The value stored at the given location, or None if there is a KeyError.
+    A class which is responsible for handling JSON data.
+    
+    Attributes
+    ---
+    _jsonData : dictionary
+        The JSON data.
     """
 
-    seperatorIndex = path.find(";")
+# Class Setup
+    _jsonData:dict = None
 
-    if seperatorIndex == -1:
+    def __init__(self, jsonData:dict = None, filePath:str = None):
+        """
+        A public method which initialises an instance of the JsonHandler class.
+
+        Parameters
+        ---
+        jsonData : dictionary (optional)
+            The JSON data.
+        filePath : string (optional)
+            The file path for a JSON file.
+        """
+
+        self._jsonData = jsonData
+
+        if self._jsonData == None:
+            self.ReadFileWithTest(filePath)
+#
+
+# Get JSON Data From File.
+    def ReadFileWithTest(self, filePath:str):
+        """
+        A public method which runs a test which takes the given file path, and retrieves the contents, before saving them in _jsonData.
+
+        Parameters
+        ---
+        filePath : string
+            The file path for the relevant file.
+        """
+
+        testCondition = TestCondition(None, 0, 9)
+        test = Test(f"The JSON '{filePath}' file exists and can be read from.", testCondition, self._ReadJsonDataFile, filePath)
+        
+        self._jsonData = test.RunTest()
+
+
+    def _ReadJsonDataFile(self, filePath:str):
+        """
+        A private method which takes the given file path, and retrieves, and then returns the contents. 
+
+        Parameters
+        ---
+        filePath : string 
+            The file path for the relevant file.
+
+        Returns
+        ---
+            The data from the file, or None if it fails.
+        """
+
         try:
-            return json[path]
-        except:
+            file = open(filePath, "r")
+        except FileNotFoundError:
             return None
 
-    parent = path[:seperatorIndex]
-    path = path[seperatorIndex+1:]
+        try:
+            return dict(json.load(file))
+        except TypeError:
+            return None
+#
 
-    try:
-        return get_data_from_json(json[parent], path)
-    except:
-        return None
-   
+# Get Data From JSON.
+    def GetFieldValues(self, returnFields:list):
+        """
+        A public method which takes the JSON and navigates it to find the given fields, which are then returned.
+
+        Parameters
+        ---
+        returnFields : list
+            The fields to be returned, stored as an array with each item being the navigation to a field, with the path separated by semicolons.
+
+        Returns
+        ---
+            A dictionary of the return fields and their values.
+        """
+
+        retrievedFields = {}
+        for field in returnFields:
+            retrievedFields[field] = self._TraverseJson(field, self._jsonData)
+
+        return retrievedFields
+
+
+    def GetSingleFieldValue(self, returnField:str):
+        """
+        A public method which takes the JSON and navigates it to find the given field and returns its value.
+
+        Parameters
+        ---
+        returnField : string
+            The field to be returned.
+
+        Returns
+        ---
+            The value stored at the requested location.
+        """
+        return self.GetFieldValues([returnField])[returnField]
+
+
+    def _TraverseJson(self, path:str, json:dict):
+        """
+        A private function which recursively navigates through the JSON by breaking down the given path.
+
+        Parameters
+        ---
+        path : string
+            The path through the JSON data to the field. 
+        json : dict
+            The JSON data to be navigated
+
+        Returns
+        ---
+            The value stored at the given location, or None if there is a KeyError.
+        """
+
+        seperatorIndex = path.find(";")
+
+        if seperatorIndex == -1:
+            try:
+                return json[path]
+            except:
+                return None
+
+        try:
+            json = json[path[:seperatorIndex]]
+            path = path[seperatorIndex+1:]
+
+            return self._TraverseJson(path, json)
+        except:
+            return None
+#
+
+# Set JSON Values
+    def SetJsonValue(self, path:str, value):
+        """
+        A public function which changes the value of the data at the JSON path.
+
+        Parameters
+        ---
+        path : string
+            The path to the value to be set.
+        value : any
+            The value to be placed at the path.
+
+        Returns
+        ---
+            A boolean value whose value corresponds to whether the values have been set.
+        """
+
+        try:
+            self._jsonData[path] = value
+            return True
+        except:
+            return False
+#
+
 ##
 
 
