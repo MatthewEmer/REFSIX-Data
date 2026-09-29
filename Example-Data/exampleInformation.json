@@ -1,0 +1,16 @@
+{
+    "hosts": {
+        "serverHost": "https://auth.refsix.com/auth/login",
+        "databaseHost": "https://couchdb1.refsix.com/supertest$"
+    },
+    "authentication": {
+        "authentication_key": "MY API KEY", 
+        "refsixUsername": "MY REFSIX USERNAME",
+        "refsixPassword": "MY REFSIX PASSWORD"
+    },
+    "tokenData": {
+        "tokenUsername": "none",
+        "tokenPassword": "none",
+        "expires": "none"
+    }
+}
