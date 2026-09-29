@@ -1,0 +1,596 @@
+{
+    "id": "0055f4fe-4b31-d297-245c-4b061099a2c6",
+    "key": "0055f4fe-4b31-d297-245c-4b061099a2c6",
+    "value": {
+        "rev": "14-8aee3e264b4c92fe9f328805ad58813b"
+    },
+    "doc": {
+        "_id": "0055f4fe-4b31-d297-245c-4b061099a2c6",
+        "_rev": "14-8aee3e264b4c92fe9f328805ad58813b",
+        "teamSize": 11,
+        "subsNo": 5,
+        "periodsNo": "2",
+        "extraTimeAvailable": false,
+        "penaltiesAvailable": false,
+        "withGoalScorers": false,
+        "misconductCodeId": "england_fa_c1",
+        "sinBinSystem": "systemB2024",
+        "timings": {
+            "period1": 40,
+            "period2": 40,
+            "interval1": 5,
+            "sinBinTimerLength": 8
+        },
+        "subOpportunities": false,
+        "date": "2026-08-15T10:00:00.000Z",
+        "officialRole": "referee",
+        "venue": "Plume School 3G - CM9 6AB",
+        "homeTeam": "South Woodham Ferrers United Y U16 Rangers",
+        "homeTeamShort": "U16",
+        "awayTeam": "South Woodham Ferrers United Y U15",
+        "awayTeamShort": "U15",
+        "matchOfficials": {},
+        "earnings": {
+            "fees": 0,
+            "expenses": 0
+        },
+        "competition": "Friendly",
+        "homeColor": "#F9FF33",
+        "awayColor": "#F71311",
+        "keywords": [
+            "youth",
+            "11-a-side (40)",
+            "friendly",
+            "daniel"
+        ],
+        "players": {
+            "South Woodham Ferrers United Y U16 Rangers": [
+                {
+                    "name": "Manager",
+                    "number": 1000,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "manager"
+                },
+                {
+                    "name": "Assistant Manager",
+                    "number": 1001,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "assistantManager"
+                },
+                {
+                    "name": "Coach",
+                    "number": 1002,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "coach"
+                },
+                {
+                    "name": "Physio",
+                    "number": 1003,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "physio"
+                }
+            ],
+            "South Woodham Ferrers United Y U15": [
+                {
+                    "name": "Manager",
+                    "number": 1000,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "manager"
+                },
+                {
+                    "name": "Assistant Manager",
+                    "number": 1001,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "assistantManager"
+                },
+                {
+                    "name": "Coach",
+                    "number": 1002,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "coach"
+                },
+                {
+                    "name": "Physio",
+                    "number": 1003,
+                    "captain": false,
+                    "starting": false,
+                    "teamOfficial": true,
+                    "role": "physio"
+                }
+            ]
+        },
+        "refsixUpdateCount": 13,
+        "refsixCount": 13,
+        "device": {
+            "os": {
+                "name": "watchos",
+                "version": "26.6"
+            },
+            "model": "Apple Watch Series 6 (GPS)",
+            "permissions": {
+                "hrPermissionsEnabled": true,
+                "gpsDisabled": false,
+                "gpsPermissionsEnabled": true
+            },
+            "watchAppVersion": "6.20.0"
+        },
+        "matchFinished": true,
+        "matchAbandoned": false,
+        "matchEvents": {
+            "1786789255649": {
+                "timestamp": 1786789255649,
+                "eventName": "Half",
+                "minuteOfPlay": 0,
+                "index": 0,
+                "name": "First Half",
+                "playing": true,
+                "length": 2400000,
+                "kickOffSide": 1,
+                "injuryTimeAccumulated": 196.66710901260376,
+                "injuryTimeInInjuryTimeAccumulated": 0,
+                "endMinute": 44,
+                "endTime": 1786791860818,
+                "isExtraTime": false,
+                "hasPosition": false
+            },
+            "1786789475227": {
+                "timestamp": 1786789475227,
+                "eventName": "Goal",
+                "half": 0,
+                "minuteOfPlay": 4,
+                "team": {
+                    "side": "home",
+                    "teamName": "South Woodham Ferrers United Y U16 Rangers",
+                    "color": "#F9FF33",
+                    "shortName": "U16"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            },
+            "1786790113253": {
+                "timestamp": 1786790113253,
+                "eventName": "Goal",
+                "half": 0,
+                "minuteOfPlay": 15,
+                "team": {
+                    "shortName": "U15",
+                    "side": "away",
+                    "teamName": "South Woodham Ferrers United Y U15",
+                    "color": "#F71311"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            },
+            "1786790975803": {
+                "timestamp": 1786790975803,
+                "eventName": "Goal",
+                "half": 0,
+                "minuteOfPlay": 29,
+                "team": {
+                    "side": "home",
+                    "shortName": "U16",
+                    "teamName": "South Woodham Ferrers United Y U16 Rangers",
+                    "color": "#F9FF33"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            },
+            "1786791860891": {
+                "timestamp": 1786791860891,
+                "eventName": "Half",
+                "minuteOfPlay": 40,
+                "index": 1,
+                "name": "Half Time",
+                "playing": false,
+                "length": 300000,
+                "injuryTimeAccumulated": 0,
+                "injuryTimeInInjuryTimeAccumulated": 0,
+                "endMinute": 5,
+                "endTime": 1786792158661,
+                "isExtraTime": false,
+                "hasPosition": false
+            },
+            "1786792258833": {
+                "timestamp": 1786792258833,
+                "eventName": "Half",
+                "minuteOfPlay": 40,
+                "index": 2,
+                "name": "Second Half",
+                "playing": true,
+                "length": 2400000,
+                "kickOffSide": 0,
+                "injuryTimeAccumulated": 241.56899189949036,
+                "injuryTimeInInjuryTimeAccumulated": 0,
+                "endMinute": 46,
+                "endTime": 1786794969253,
+                "isExtraTime": false,
+                "hasPosition": false
+            },
+            "1786792316549": {
+                "timestamp": 1786792316549,
+                "eventName": "Goal",
+                "half": 2,
+                "minuteOfPlay": 41,
+                "team": {
+                    "color": "#F71311",
+                    "teamName": "South Woodham Ferrers United Y U15",
+                    "side": "away",
+                    "shortName": "U15"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            },
+            "1786793406676": {
+                "timestamp": 1786793406676,
+                "eventName": "Goal",
+                "half": 2,
+                "minuteOfPlay": 60,
+                "team": {
+                    "teamName": "South Woodham Ferrers United Y U15",
+                    "color": "#F71311",
+                    "shortName": "U15",
+                    "side": "away"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            },
+            "1786793899419": {
+                "timestamp": 1786793899419,
+                "eventName": "Goal",
+                "half": 2,
+                "minuteOfPlay": 68,
+                "team": {
+                    "color": "#F9FF33",
+                    "shortName": "U16",
+                    "teamName": "South Woodham Ferrers United Y U16 Rangers",
+                    "side": "home"
+                },
+                "ownGoal": false,
+                "penalty": false,
+                "freeKick": false,
+                "hasPosition": false
+            }
+        },
+        "eventsProcessed": true,
+        "stats": {
+            "yellow": 0,
+            "red": 0,
+            "sinBin": 0,
+            "penalties": 0,
+            "goals": 6,
+            "version": 18,
+            "gpsCalibratedTotal": 1,
+            "minutesPlayed": 88.59315000000001,
+            "minutesPlayedAsReferee": 88.59315000000001,
+            "minutesPlayedAsAssistant": 0,
+            "minutesPlayedAsFourthOfficial": 0,
+            "minutesPlayedAsObserver": 0,
+            "speedMax": 0,
+            "speedAverage": 0,
+            "goalsTotal": 6,
+            "goalsHomeTotal": 3,
+            "goalsAwayTotal": 3,
+            "penaltyShotHomeScored": 0,
+            "penaltyShotHomeMissed": 0,
+            "penaltyShotAwayScored": 0,
+            "penaltyShotAwayMissed": 0,
+            "winnerHome": 0,
+            "winnerAway": 0,
+            "winnerDraw": 1,
+            "playedET": [
+                0,
+                0,
+                0,
+                0
+            ],
+            "playedPenalties": [
+                0,
+                0,
+                0,
+                0
+            ],
+            "duration": 0,
+            "injuryTimeTotal": 515589,
+            "injuryTimeHalvesTotal": 515589,
+            "injuryTimeThirdsTotal": 0,
+            "injuryTimeQuartersTotal": 0,
+            "injuryTimeByHalvesTotal": [
+                205169,
+                310420
+            ],
+            "injuryTimeByThirdsTotal": [
+                0,
+                0,
+                0
+            ],
+            "injuryTimeByQuartersTotal": [
+                0,
+                0,
+                0,
+                0
+            ],
+            "distanceTotal": 6256.25,
+            "distanceAsRefereeTotal": 6256.25,
+            "distanceAsAssistantTotal": 0,
+            "distanceHalvesTotal": 6256.25,
+            "distanceThirdsTotal": 0,
+            "distanceQuartersTotal": 0,
+            "distanceByHalvesTotal": [
+                3215.0400000000004,
+                3041.18
+            ],
+            "distanceByThirdsTotal": [
+                0,
+                0,
+                0
+            ],
+            "distanceByQuartersTotal": [
+                0,
+                0,
+                0,
+                0
+            ],
+            "sprintsMediumAndHigh": 3,
+            "sprintsTotal": [
+                6,
+                3,
+                0
+            ],
+            "sprintsHalvesTotal": [
+                6,
+                3,
+                0
+            ],
+            "sprintsThirdsTotal": [
+                0,
+                0,
+                0
+            ],
+            "sprintsQuartersTotal": [
+                0,
+                0,
+                0
+            ],
+            "sprintsDistanceTotal": [
+                79.163,
+                49.089,
+                0
+            ],
+            "sprintsDistanceHalvesTotal": [
+                79.163,
+                49.089,
+                0
+            ],
+            "sprintsDistanceThirdsTotal": [
+                0,
+                0,
+                0
+            ],
+            "sprintsDistanceQuartersTotal": [
+                0,
+                0,
+                0
+            ],
+            "sprintsByHalvesTotal": [
+                [
+                    5,
+                    1,
+                    0
+                ],
+                [
+                    1,
+                    2,
+                    0
+                ]
+            ],
+            "sprintsByThirdsTotal": [
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "sprintsByQuartersTotal": [
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "sprintsByHalvesDistanceTotal": [
+                [
+                    69.887,
+                    11.275,
+                    0
+                ],
+                [
+                    9.276,
+                    37.81399999999999,
+                    0
+                ]
+            ],
+            "sprintsByThirdsDistanceTotal": [
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "sprintsByQuartersDistanceTotal": [
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "speedCategoryDurations": [
+                1242.121,
+                3416.001,
+                906.8779999999999,
+                118.08500000000001,
+                14,
+                5
+            ],
+            "speedCategoryDistances": [
+                97.484,
+                3150.5169999999944,
+                2353.2110000000016,
+                532.5139999999997,
+                84.726,
+                37.801
+            ],
+            "feesTotal": 0,
+            "expensesTotal": 0,
+            "earningsTotal": 0,
+            "earningsAsRefereeTotal": 0,
+            "earningsAsAssistantTotal": 0,
+            "earningsAsFourthOfficialTotal": 0,
+            "earningsAsObserverTotal": 0,
+            "heartRateAverage": 160,
+            "heartRateMax": 182,
+            "heartRate15Mins": [],
+            "heartRateZoneDuration": [
+                0,
+                87.75,
+                1865.126,
+                2478.999,
+                6
+            ],
+            "heartRateZone4And5": 2484.999,
+            "redCardTotal": 0,
+            "yellowCardTotal": 0,
+            "yellowCardByTime": [],
+            "yellowCardByHomePlayer": {},
+            "yellowCardByAwayPlayer": {},
+            "redCardByHomePlayer": {},
+            "redCardByAwayPlayer": {},
+            "yellowCardHomeTotal": 0,
+            "yellowCardAwayTotal": 0,
+            "redCardHomeTotal": 0,
+            "redCardAwayTotal": 0,
+            "yellowCardPositions": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "redCardPositions": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "yellowCardCodes": {},
+            "redCardCodes": {},
+            "sinBinsTotal": 0,
+            "sinBinsMinutesSpent": 0,
+            "sinBinsByTime": [],
+            "sinBinsGoalPlayerTeam": 0,
+            "sinBinsGoalOppositeTeam": 0,
+            "gpsCenterPoint": {
+                "latitude": 51.72829919193328,
+                "longitude": 0.6773973584929263
+            },
+            "gpsAvailable": [
+                1,
+                1,
+                0,
+                0
+            ],
+            "heartRateAvailable": [
+                1,
+                1,
+                0,
+                0
+            ],
+            "gpsProcessed": 1,
+            "heartRateProcessed": 1
+        },
+        "hasTracking": true,
+        "hasHeartRate": true
+    }
+}
