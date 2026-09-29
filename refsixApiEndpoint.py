@@ -13,7 +13,9 @@ class RefsixApi:
 ## Class Setup
     _authenticationFile:JsonFile
     _apiSession:requests.Session
+    
     _authenticatedUrl:str
+    _authenticationExpires:int
 
     def __init__(self, filePath:str):
         self._authenticationFile = JsonFile(filePath)
@@ -31,8 +33,9 @@ class RefsixApi:
 
         if response.status_code == 200:
             self._authenticatedUrl = response.json()["userDBs"]["supertest"]
+            self._authenticationExpires = response.json()["expires"]
         else:
-            print(f"ERROR - status code {response.status_code} returned from POST Login.")
+            print(f"ERROR - status code '{response.status_code} {response.reason}' returned from POST Login.")
 
 
     def _FormatLoginRequest(self):
@@ -42,12 +45,15 @@ class RefsixApi:
         headers = { "Authentication": f"Bearer {authenticationData["authentication_key"]}", "Content-Type": "application/json" }
         payload = json.dumps({ "username": authenticationData["refsixUsername"], "password": authenticationData["refsixPassword"] })
 
-        return (url, headers, payload)
+        return (str(url), dict(headers), str(payload))
 ##
 
 
 ## GET All Matches
     def GET_AllMatches(self):
+        if self._authenticationExpires <= time.time():
+            print(f"ERROR - status code '401 Unauthorised' returned from GET All Matches.")
+        
         (url, headers, payload) = self._FormatAllMatchesRequest()
 
         start = time.time()
@@ -55,9 +61,21 @@ class RefsixApi:
         print(f"GET All Matches: {response.status_code} {response.reason} - {round(time.time()-start, 2)} ms")
 
         if response.status_code == 200:
-            return response.json()
+            matches = JsonData(response.json()).GetObjects({ "matches": ["rows"] })["matches"]
+
+            returnMatches = {}
+            for match in matches:
+                matchData = match["doc"]
+
+                try:
+                    matchUID = f"{matchData["date"]}{matchData["homeTeamShort"]}{matchData["awayTeamShort"]}"
+                    returnMatches[matchUID] = matchData
+                except:
+                    continue
+
+            return returnMatches
         else:
-            print(f"ERROR - status code {response.status_code} returned from GET All Matches.")
+            print(f"ERROR - status code '{response.status_code} {response.reason}' returned from GET All Matches.")
 
 
     def _FormatAllMatchesRequest(self):
@@ -170,15 +188,6 @@ api = RefsixApi("information.json")
 
 api.POST_Login()
 
-matchData = JsonData(api.GET_AllMatches())
+matchData = api.GET_AllMatches()
 
-matchSummaries = matchData.GetObjectsFromArray(["rows"], { "Date": ["doc", "date"], "Home Team": ["doc", "homeTeam"], "Away Team": ["doc", "awayTeam"] })
-
-matchDates = []
-for match in matchSummaries:
-    matchDates.append(match["Date"])
-
-matchSummaries = [val for _, val in sorted(zip(matchDates, matchSummaries))]
-
-for match in matchSummaries:
-    print(f"\n{match}")    
+print(len(matchData))
